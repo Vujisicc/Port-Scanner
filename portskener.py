@@ -1,6 +1,23 @@
 import socket
+import threading
+from queue import Queue
 
-target = "127.0.0.1"
+
+target = input("input the target IP address for the scan: ")
+queue = Queue()
+openPorts = []
+
+def fillQueue(portList):
+    for port in portList:
+        queue.put(port)
+
+def worker():
+    while not queue.empty():
+        port = queue.get()
+        if portScan(port):
+            print("Port {} is open".format(port))
+            openPorts.append(port)
+
 
 def portScan(port):
     try:
@@ -10,9 +27,20 @@ def portScan(port):
     except:
         return False
 
-for port in range(1, 1024):
-    result = portScan(port)
-    if result:
-        print("Port {} is open".format(port))
-    else:
-        print("Port {} is closed".format(port))
+
+portList = range(1,1500)
+fillQueue(portList)
+
+threadList = []
+
+for t in range(200):
+    thread = threading.Thread(target=worker)
+    threadList.append(thread)
+
+for thread in threadList:
+    thread.start()
+
+for thread in threadList:
+    thread.join()
+
+print("Open ports are: ", openPorts)
